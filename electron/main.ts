@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { getPageCount, mergePdfs } from './pdf-service'
 
 function createWindow(): BrowserWindow {
@@ -10,7 +10,7 @@ function createWindow(): BrowserWindow {
     minHeight: 500,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: true
     }
   })
 
@@ -39,7 +39,7 @@ function registerIpcHandlers(): void {
     for (const filePath of filePaths) {
       try {
         const pageCount = await getPageCount(filePath)
-        const name = filePath.split('/').pop() ?? filePath.split('\\').pop() ?? filePath
+        const name = basename(filePath)
         results.push({ name, path: filePath, pageCount })
       } catch {
         // Skip corrupted PDF files
@@ -49,7 +49,14 @@ function registerIpcHandlers(): void {
     return results
   })
 
-  ipcMain.handle('pdf:merge', async (_event, filePaths: string[]) => {
+  ipcMain.handle('pdf:merge', async (_event, filePaths: unknown) => {
+    if (!Array.isArray(filePaths) || filePaths.length === 0) {
+      return { success: false, error: 'Invalid file paths' }
+    }
+    if (!filePaths.every((p): p is string => typeof p === 'string' && p.endsWith('.pdf'))) {
+      return { success: false, error: 'Only PDF files are allowed' }
+    }
+
     try {
       const { canceled, filePath } = await dialog.showSaveDialog({
         defaultPath: 'merged.pdf',
