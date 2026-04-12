@@ -1,0 +1,80 @@
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.index {
+  color: #999;
+  min-width: 24px;
+}
+
+.name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pages {
+  color: #666;
+  font-size: 13px;
+  min-width: 30px;
+  text-align: right;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.actionButton {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.actionButton:hover:not(:disabled) {
+  background: #e8e8e8;
+}
+
+.actionButton:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.removeButton {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.removeButton:hover {
+  color: #e53e3e;
+  background: #fee;
+}
