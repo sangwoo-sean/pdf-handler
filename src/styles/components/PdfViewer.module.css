@@ -1,0 +1,96 @@
+.viewer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.openButton {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  background: #f5f5f5;
+  border: 1px dashed #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.openButton:hover {
+  background: #eee;
+}
+
+.fileName {
+  margin: 12px 0 8px;
+  font-size: 13px;
+  color: #666;
+  text-align: center;
+  word-break: break-all;
+}
+
+.canvasContainer {
+  width: 100%;
+  max-height: 400px;
+  overflow: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  background: #fafafa;
+}
+
+.canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.navigation {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.navButton {
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #333;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.navButton:hover:not(:disabled) {
+  background: #e8e8e8;
+}
+
+.navButton:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pageInfo {
+  font-size: 14px;
+  color: #333;
+  min-width: 60px;
+  text-align: center;
+}
+
+.loading {
+  margin: 40px 0;
+  font-size: 14px;
+  color: #999;
+  text-align: center;
+}
+
+.placeholder {
+  margin: 40px 0;
+  font-size: 14px;
+  color: #999;
+  text-align: center;
+}

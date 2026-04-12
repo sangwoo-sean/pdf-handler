@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { readFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { getPageCount, mergePdfs } from './pdf-service'
 
@@ -47,6 +48,33 @@ function registerIpcHandlers(): void {
     }
 
     return results
+  })
+
+  ipcMain.handle('dialog:open-file', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+    })
+
+    if (canceled || filePaths.length === 0) {
+      return null
+    }
+
+    const filePath = filePaths[0]
+    try {
+      const pageCount = await getPageCount(filePath)
+      return { name: basename(filePath), path: filePath, pageCount }
+    } catch {
+      return null
+    }
+  })
+
+  ipcMain.handle('pdf:read-file', async (_event, filePath: unknown) => {
+    if (typeof filePath !== 'string' || !filePath.endsWith('.pdf')) {
+      throw new Error('Invalid file path')
+    }
+    const buffer = await readFile(filePath)
+    return new Uint8Array(buffer)
   })
 
   ipcMain.handle('pdf:merge', async (_event, filePaths: unknown) => {
