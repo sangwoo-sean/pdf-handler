@@ -21,6 +21,18 @@ export interface UsePdfViewerReturn {
   readonly prevPage: () => void
 }
 
+function cancelRenderTask(ref: React.RefObject<pdfjs.RenderTask | null>): void {
+  if (ref.current) {
+    ref.current.cancel()
+    ref.current = null
+  }
+}
+
+function isRenderCancelled(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  return error.message.includes('cancel') || error.name.includes('Cancel')
+}
+
 export function usePdfViewer(): UsePdfViewerReturn {
   const [fileName, setFileName] = useState<string | null>(null)
   const [filePath, setFilePath] = useState<string | null>(null)
@@ -37,13 +49,18 @@ export function usePdfViewer(): UsePdfViewerReturn {
     const canvas = canvasRef.current
     if (!pdfDoc || !canvas || pageNumber < 1 || pageNumber > pdfDoc.numPages) return
 
-    if (renderTaskRef.current) {
-      renderTaskRef.current.cancel()
+    cancelRenderTask(renderTaskRef)
+
+    let page
+    try {
+      page = await pdfDoc.getPage(pageNumber)
+    } catch {
+      return
     }
 
-    const page = await pdfDoc.getPage(pageNumber)
-    const viewport = page.getViewport({ scale: RENDER_SCALE })
+    if (!canvasRef.current) return
 
+    const viewport = page.getViewport({ scale: RENDER_SCALE })
     canvas.width = viewport.width
     canvas.height = viewport.height
 
@@ -56,26 +73,23 @@ export function usePdfViewer(): UsePdfViewerReturn {
     try {
       await renderTask.promise
     } catch (error) {
-      if (error instanceof Error && error.message === 'Rendering cancelled') {
-        return
-      }
+      if (isRenderCancelled(error)) return
       throw error
     }
   }, [])
 
   useEffect(() => {
     if (currentPage > 0) {
-      renderPage(currentPage)
+      renderPage(currentPage).catch(() => {})
     }
   }, [currentPage, renderPage])
 
   useEffect(() => {
     return () => {
-      if (renderTaskRef.current) {
-        renderTaskRef.current.cancel()
-      }
+      cancelRenderTask(renderTaskRef)
       if (pdfDocRef.current) {
         pdfDocRef.current.destroy()
+        pdfDocRef.current = null
       }
     }
   }, [])
@@ -86,8 +100,10 @@ export function usePdfViewer(): UsePdfViewerReturn {
 
     setIsLoading(true)
     try {
+      cancelRenderTask(renderTaskRef)
       if (pdfDocRef.current) {
         pdfDocRef.current.destroy()
+        pdfDocRef.current = null
       }
 
       const bytes = await window.electronAPI.readPdfFile(result.path)

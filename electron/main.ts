@@ -24,6 +24,8 @@ function createWindow(): BrowserWindow {
   return win
 }
 
+const allowedPdfPaths = new Set<string>()
+
 function registerIpcHandlers(): void {
   ipcMain.handle('dialog:open-files', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -41,6 +43,7 @@ function registerIpcHandlers(): void {
       try {
         const pageCount = await getPageCount(filePath)
         const name = basename(filePath)
+        allowedPdfPaths.add(filePath)
         results.push({ name, path: filePath, pageCount })
       } catch {
         // Skip corrupted PDF files
@@ -63,6 +66,7 @@ function registerIpcHandlers(): void {
     const filePath = filePaths[0]
     try {
       const pageCount = await getPageCount(filePath)
+      allowedPdfPaths.add(filePath)
       return { name: basename(filePath), path: filePath, pageCount }
     } catch {
       return null
@@ -70,8 +74,8 @@ function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('pdf:read-file', async (_event, filePath: unknown) => {
-    if (typeof filePath !== 'string' || !filePath.endsWith('.pdf')) {
-      throw new Error('Invalid file path')
+    if (typeof filePath !== 'string' || !allowedPdfPaths.has(filePath)) {
+      throw new Error('File not authorized for reading')
     }
     const buffer = await readFile(filePath)
     return new Uint8Array(buffer)
