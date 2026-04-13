@@ -98,6 +98,7 @@ export function DraggableImage({
         width: display.width,
         height: display.height
       }}
+      onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => handlePointerDown(e, 'move')}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
