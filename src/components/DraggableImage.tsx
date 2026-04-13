@@ -9,15 +9,25 @@ interface DraggableImageProps {
   readonly isSelected: boolean
   readonly onUpdate: (
     id: string,
-    patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height'>>
+    patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height' | 'rotation'>>
   ) => void
   readonly onRemove: (id: string) => void
   readonly onSelect: (id: string) => void
 }
 
-type DragMode = 'move' | 'resize' | null
+type DragMode = 'move' | 'resize' | 'rotate' | null
 
 const MIN_DISPLAY_SIZE = 20
+
+function calcRotationDeg(
+  centerX: number,
+  centerY: number,
+  mouseX: number,
+  mouseY: number
+): number {
+  const rad = Math.atan2(mouseX - centerX, -(mouseY - centerY))
+  return ((rad * 180) / Math.PI + 360) % 360
+}
 
 export function DraggableImage({
   overlay,
@@ -29,6 +39,8 @@ export function DraggableImage({
 }: DraggableImageProps) {
   const [dragMode, setDragMode] = useState<DragMode>(null)
   const startRef = useRef({ mouseX: 0, mouseY: 0, x: 0, y: 0, w: 0, h: 0 })
+  const rotateStartRef = useRef({ startAngle: 0, startRotation: 0 })
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
 
   const display = pdfToDisplay(overlay, canvas)
 
@@ -47,6 +59,16 @@ export function DraggableImage({
         y: currentDisplay.y,
         w: currentDisplay.width,
         h: currentDisplay.height
+      }
+
+      if (mode === 'rotate' && wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+        rotateStartRef.current = {
+          startAngle: calcRotationDeg(centerX, centerY, e.clientX, e.clientY),
+          startRotation: overlay.rotation
+        }
       }
 
       ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
@@ -72,6 +94,14 @@ export function DraggableImage({
         const newDisplay = { x, y, width: newW, height: newH }
         const pdfRect = displayToPdf(newDisplay, canvas)
         onUpdate(overlay.id, { width: pdfRect.width, height: pdfRect.height })
+      } else if (dragMode === 'rotate' && wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+        const currentAngle = calcRotationDeg(centerX, centerY, e.clientX, e.clientY)
+        const { startAngle, startRotation } = rotateStartRef.current
+        const delta = currentAngle - startAngle
+        onUpdate(overlay.id, { rotation: (startRotation + delta + 360) % 360 })
       }
     },
     [dragMode, canvas, overlay.id, onUpdate]
@@ -91,12 +121,14 @@ export function DraggableImage({
 
   return (
     <div
+      ref={wrapperRef}
       className={`${styles.wrapper} ${isSelected ? styles.selected : ''}`}
       style={{
         left: display.x,
         top: display.y,
         width: display.width,
-        height: display.height
+        height: display.height,
+        transform: overlay.rotation ? `rotate(${overlay.rotation}deg)` : undefined
       }}
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => handlePointerDown(e, 'move')}
@@ -119,6 +151,11 @@ export function DraggableImage({
           >
             ✕
           </button>
+          <div
+            className={styles.rotateHandle}
+            onPointerDown={(e) => handlePointerDown(e, 'rotate')}
+          />
+          <div className={styles.rotateLine} />
           <div
             className={styles.resizeHandle}
             onPointerDown={(e) => handlePointerDown(e, 'resize')}

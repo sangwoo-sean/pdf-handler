@@ -98,6 +98,7 @@ function ViewerApp() {
         y: o.y,
         width: o.width,
         height: o.height,
+        rotation: o.rotation,
         bytes: o.bytes,
         mimeType: o.mimeType
       }))

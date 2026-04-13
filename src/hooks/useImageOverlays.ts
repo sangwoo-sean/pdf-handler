@@ -13,7 +13,7 @@ export interface UseImageOverlaysReturn {
   ) => void
   readonly updateOverlay: (
     id: string,
-    patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height'>>
+    patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height' | 'rotation'>>
   ) => void
   readonly removeOverlay: (id: string) => void
   readonly getOverlaysForPage: (pageNumber: number) => readonly ImageOverlay[]
@@ -39,6 +39,7 @@ function createOverlay(
     y: (pdfPageHeight - size) / 2,
     width: size,
     height: size,
+    rotation: 0,
     dataUrl,
     bytes,
     mimeType
@@ -64,7 +65,7 @@ export function useImageOverlays(): UseImageOverlaysReturn {
   )
 
   const updateOverlay = useCallback(
-    (id: string, patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height'>>) => {
+    (id: string, patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height' | 'rotation'>>) => {
       setOverlays((prev) =>
         prev.map((overlay) =>
           overlay.id === id ? { ...overlay, ...patch } : overlay
@@ -89,12 +90,13 @@ export function useImageOverlays(): UseImageOverlaysReturn {
 
   const serializeOverlays = useCallback(
     (): readonly SerializedOverlay[] =>
-      overlays.map(({ pageNumber, x, y, width, height, bytes, mimeType }) => ({
+      overlays.map(({ pageNumber, x, y, width, height, rotation, bytes, mimeType }) => ({
         pageNumber,
         x,
         y,
         width,
         height,
+        rotation,
         bytes,
         mimeType
       })),

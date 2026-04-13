@@ -46,6 +46,35 @@
   background: #ffebee;
 }
 
+.rotateHandle {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  background: #ff9800;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.rotateHandle:active {
+  cursor: grabbing;
+  background: #f57c00;
+}
+
+.rotateLine {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  width: 1px;
+  height: 16px;
+  background: #2196f3;
+  pointer-events: none;
+}
+
 .resizeHandle {
   position: absolute;
   bottom: -5px;

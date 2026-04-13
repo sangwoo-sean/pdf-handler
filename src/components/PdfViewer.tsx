@@ -7,7 +7,7 @@ interface PdfViewerProps extends Omit<UsePdfViewerReturn, 'filePath' | 'pdfPageS
   readonly overlays: readonly ImageOverlay[]
   readonly onUpdateOverlay: (
     id: string,
-    patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height'>>
+    patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height' | 'rotation'>>
   ) => void
   readonly onRemoveOverlay: (id: string) => void
   readonly onInsertImage: () => void

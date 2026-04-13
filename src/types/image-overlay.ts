@@ -8,6 +8,8 @@ export interface ImageOverlay {
   readonly y: number
   readonly width: number
   readonly height: number
+  /** 회전 각도 (도, 시계 방향) */
+  readonly rotation: number
   readonly dataUrl: string
   readonly bytes: Uint8Array
   readonly mimeType: ImageMimeType
@@ -26,6 +28,7 @@ export interface SerializedOverlay {
   readonly y: number
   readonly width: number
   readonly height: number
+  readonly rotation: number
   readonly bytes: Uint8Array
   readonly mimeType: ImageMimeType
 }

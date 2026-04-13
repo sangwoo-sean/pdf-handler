@@ -8,7 +8,7 @@ interface ImageOverlayLayerProps {
   readonly canvas: HTMLCanvasElement
   readonly onUpdate: (
     id: string,
-    patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height'>>
+    patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height' | 'rotation'>>
   ) => void
   readonly onRemove: (id: string) => void
 }

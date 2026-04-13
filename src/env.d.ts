@@ -15,6 +15,7 @@ interface ElectronAPI {
       y: number
       width: number
       height: number
+      rotation: number
       bytes: Uint8Array
       mimeType: string
     }>

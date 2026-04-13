@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { PDFDocument } from 'pdf-lib'
+import { degrees, PDFDocument } from 'pdf-lib'
 
 export interface SerializedOverlay {
   readonly pageNumber: number
@@ -7,6 +7,7 @@ export interface SerializedOverlay {
   readonly y: number
   readonly width: number
   readonly height: number
+  readonly rotation: number
   readonly bytes: Uint8Array
   readonly mimeType: 'image/png' | 'image/jpeg'
 }
@@ -57,7 +58,8 @@ export async function savePdfWithImages(
       x: overlay.x,
       y: overlay.y,
       width: overlay.width,
-      height: overlay.height
+      height: overlay.height,
+      rotate: degrees(-overlay.rotation)
     })
   }
 
