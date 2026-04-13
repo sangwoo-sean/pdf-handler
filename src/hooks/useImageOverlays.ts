@@ -9,7 +9,9 @@ export interface UseImageOverlaysReturn {
     bytes: Uint8Array,
     mimeType: ImageMimeType,
     pdfPageWidth: number,
-    pdfPageHeight: number
+    pdfPageHeight: number,
+    imageNaturalWidth: number,
+    imageNaturalHeight: number
   ) => void
   readonly updateOverlay: (
     id: string,
@@ -29,16 +31,22 @@ function createOverlay(
   bytes: Uint8Array,
   mimeType: ImageMimeType,
   pdfPageWidth: number,
-  pdfPageHeight: number
+  pdfPageHeight: number,
+  imageNaturalWidth: number,
+  imageNaturalHeight: number
 ): ImageOverlay {
-  const size = Math.min(DEFAULT_IMAGE_SIZE, pdfPageWidth / 3, pdfPageHeight / 3)
+  const maxSize = Math.min(DEFAULT_IMAGE_SIZE, pdfPageWidth / 3, pdfPageHeight / 3)
+  const aspectRatio = imageNaturalWidth / imageNaturalHeight
+  const width = aspectRatio >= 1 ? maxSize : maxSize * aspectRatio
+  const height = aspectRatio >= 1 ? maxSize / aspectRatio : maxSize
+
   return {
     id: crypto.randomUUID(),
     pageNumber,
-    x: (pdfPageWidth - size) / 2,
-    y: (pdfPageHeight - size) / 2,
-    width: size,
-    height: size,
+    x: (pdfPageWidth - width) / 2,
+    y: (pdfPageHeight - height) / 2,
+    width,
+    height,
     rotation: 0,
     dataUrl,
     bytes,
@@ -56,9 +64,15 @@ export function useImageOverlays(): UseImageOverlaysReturn {
       bytes: Uint8Array,
       mimeType: ImageMimeType,
       pdfPageWidth: number,
-      pdfPageHeight: number
+      pdfPageHeight: number,
+      imageNaturalWidth: number,
+      imageNaturalHeight: number
     ) => {
-      const overlay = createOverlay(pageNumber, dataUrl, bytes, mimeType, pdfPageWidth, pdfPageHeight)
+      const overlay = createOverlay(
+        pageNumber, dataUrl, bytes, mimeType,
+        pdfPageWidth, pdfPageHeight,
+        imageNaturalWidth, imageNaturalHeight
+      )
       setOverlays((prev) => [...prev, overlay])
     },
     []

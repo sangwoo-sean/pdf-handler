@@ -53,6 +53,15 @@ function MainApp() {
   )
 }
 
+function loadImageSize(src: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+    img.onerror = () => reject(new Error('Failed to load image'))
+    img.src = src
+  })
+}
+
 function bytesToDataUrl(bytes: Uint8Array, mimeType: string): string {
   let binary = ''
   for (let i = 0; i < bytes.length; i++) {
@@ -74,13 +83,18 @@ function ViewerApp() {
     if (!result) return
 
     const dataUrl = bytesToDataUrl(result.bytes, result.mimeType)
+
+    const { width: naturalWidth, height: naturalHeight } = await loadImageSize(dataUrl)
+
     imageOverlays.addOverlay(
       pdfViewer.currentPage,
       dataUrl,
       result.bytes,
       result.mimeType as ImageMimeType,
       pdfViewer.pdfPageSize.width,
-      pdfViewer.pdfPageSize.height
+      pdfViewer.pdfPageSize.height,
+      naturalWidth,
+      naturalHeight
     )
   }, [pdfViewer.currentPage, pdfViewer.pdfPageSize, imageOverlays.addOverlay])
 

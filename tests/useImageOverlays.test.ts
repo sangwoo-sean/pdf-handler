@@ -20,7 +20,7 @@ describe('useImageOverlays', () => {
     const { result } = renderHook(() => useImageOverlays())
 
     act(() => {
-      result.current.addOverlay(1, 'data:image/png;base64,...', PNG_BYTES, 'image/png', 612, 792)
+      result.current.addOverlay(1, 'data:image/png;base64,...', PNG_BYTES, 'image/png', 612, 792, 200, 100)
     })
 
     expect(result.current.overlays).toHaveLength(1)
@@ -28,16 +28,19 @@ describe('useImageOverlays', () => {
     expect(overlay.id).toBe('uuid-1')
     expect(overlay.pageNumber).toBe(1)
     expect(overlay.mimeType).toBe('image/png')
-    // centered: (612 - 100) / 2 = 256
+    // 200x100 image (2:1 ratio), maxSize=100 → width=100, height=50
+    // centered: x=(612-100)/2=256, y=(792-50)/2=371
     expect(overlay.x).toBeCloseTo(256, 0)
-    expect(overlay.y).toBeCloseTo(346, 0)
+    expect(overlay.y).toBeCloseTo(371, 0)
+    expect(overlay.width).toBeCloseTo(100, 0)
+    expect(overlay.height).toBeCloseTo(50, 0)
   })
 
   it('should update overlay position immutably', () => {
     const { result } = renderHook(() => useImageOverlays())
 
     act(() => {
-      result.current.addOverlay(1, 'url', PNG_BYTES, 'image/png', 612, 792)
+      result.current.addOverlay(1, 'url', PNG_BYTES, 'image/png', 612, 792, 200, 100)
     })
 
     const before = result.current.overlays
@@ -56,8 +59,8 @@ describe('useImageOverlays', () => {
     const { result } = renderHook(() => useImageOverlays())
 
     act(() => {
-      result.current.addOverlay(1, 'url1', PNG_BYTES, 'image/png', 612, 792)
-      result.current.addOverlay(2, 'url2', PNG_BYTES, 'image/png', 612, 792)
+      result.current.addOverlay(1, 'url1', PNG_BYTES, 'image/png', 612, 792, 200, 100)
+      result.current.addOverlay(2, 'url2', PNG_BYTES, 'image/png', 612, 792, 200, 100)
     })
 
     act(() => {
@@ -72,9 +75,9 @@ describe('useImageOverlays', () => {
     const { result } = renderHook(() => useImageOverlays())
 
     act(() => {
-      result.current.addOverlay(1, 'url1', PNG_BYTES, 'image/png', 612, 792)
-      result.current.addOverlay(2, 'url2', PNG_BYTES, 'image/png', 612, 792)
-      result.current.addOverlay(1, 'url3', PNG_BYTES, 'image/png', 612, 792)
+      result.current.addOverlay(1, 'url1', PNG_BYTES, 'image/png', 612, 792, 200, 100)
+      result.current.addOverlay(2, 'url2', PNG_BYTES, 'image/png', 612, 792, 200, 100)
+      result.current.addOverlay(1, 'url3', PNG_BYTES, 'image/png', 612, 792, 200, 100)
     })
 
     const page1 = result.current.getOverlaysForPage(1)
@@ -89,8 +92,8 @@ describe('useImageOverlays', () => {
     const { result } = renderHook(() => useImageOverlays())
 
     act(() => {
-      result.current.addOverlay(1, 'url1', PNG_BYTES, 'image/png', 612, 792)
-      result.current.addOverlay(2, 'url2', PNG_BYTES, 'image/png', 612, 792)
+      result.current.addOverlay(1, 'url1', PNG_BYTES, 'image/png', 612, 792, 200, 100)
+      result.current.addOverlay(2, 'url2', PNG_BYTES, 'image/png', 612, 792, 200, 100)
     })
 
     act(() => {
@@ -104,7 +107,7 @@ describe('useImageOverlays', () => {
     const { result } = renderHook(() => useImageOverlays())
 
     act(() => {
-      result.current.addOverlay(1, 'url1', PNG_BYTES, 'image/png', 612, 792)
+      result.current.addOverlay(1, 'url1', PNG_BYTES, 'image/png', 612, 792, 200, 100)
     })
 
     const serialized = result.current.serializeOverlays()
