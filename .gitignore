@@ -6,3 +6,5 @@ dist/
 *.AppImage
 .DS_Store
 .worktrees/
+.claude/
+src/assets/
