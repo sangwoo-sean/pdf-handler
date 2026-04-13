@@ -13,6 +13,8 @@ interface PdfViewerProps extends Omit<UsePdfViewerReturn, 'filePath' | 'pdfPageS
   readonly onInsertImage: () => void
   readonly onSave: () => void
   readonly canSave: boolean
+  readonly canvasWrapperRef?: React.RefObject<HTMLDivElement | null>
+  readonly isDragOver?: boolean
 }
 
 export function PdfViewer({
@@ -29,7 +31,9 @@ export function PdfViewer({
   onRemoveOverlay,
   onInsertImage,
   onSave,
-  canSave
+  canSave,
+  canvasWrapperRef,
+  isDragOver
 }: PdfViewerProps) {
   return (
     <div className={styles.viewer}>
@@ -65,7 +69,10 @@ export function PdfViewer({
         className={styles.canvasContainer}
         style={{ display: fileName && !isLoading ? undefined : 'none' }}
       >
-        <div className={styles.canvasWrapper}>
+        <div
+          ref={canvasWrapperRef}
+          className={`${styles.canvasWrapper} ${isDragOver ? styles.canvasWrapperDragOver : ''}`}
+        >
           <canvas ref={canvasRef} className={styles.canvas} />
           {canvasRef.current && overlays.length > 0 && (
             <ImageOverlayLayer

@@ -46,10 +46,11 @@ export async function savePdfWithImages(
   const pdfDoc = await PDFDocument.load(new Uint8Array(buffer))
 
   for (const overlay of overlays) {
-    const embeddedImage =
-      overlay.mimeType === 'image/png'
-        ? await pdfDoc.embedPng(overlay.bytes)
-        : await pdfDoc.embedJpg(overlay.bytes)
+    const bytes = new Uint8Array(overlay.bytes)
+    const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
+    const embeddedImage = isPng
+      ? await pdfDoc.embedPng(bytes)
+      : await pdfDoc.embedJpg(bytes)
 
     const pageIndex = overlay.pageNumber - 1
     const page = pdfDoc.getPage(pageIndex)

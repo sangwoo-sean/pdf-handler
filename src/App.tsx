@@ -1,13 +1,16 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useFileList } from './hooks/useFileList'
 import { usePdfViewer } from './hooks/usePdfViewer'
 import { useImageOverlays } from './hooks/useImageOverlays'
+import { useImagePaste } from './hooks/useImagePaste'
+import { useImageDrop } from './hooks/useImageDrop'
 import { ViewerNav, type ViewType } from './components/ViewerNav'
 import { AddFileButton } from './components/AddFileButton'
 import { FileList } from './components/FileList'
 import { MergeButton } from './components/MergeButton'
 import { PdfViewer } from './components/PdfViewer'
 import { ViewerLauncher } from './components/ViewerLauncher'
+import { bytesToDataUrl, loadImageSize } from './utils/image'
 import type { ImageMimeType } from './types/image-overlay'
 import styles from './styles/App.module.css'
 
@@ -53,50 +56,44 @@ function MainApp() {
   )
 }
 
-function loadImageSize(src: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
-    img.onerror = () => reject(new Error('Failed to load image'))
-    img.src = src
-  })
-}
-
-function bytesToDataUrl(bytes: Uint8Array, mimeType: string): string {
-  let binary = ''
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i])
-  }
-  return `data:${mimeType};base64,${btoa(binary)}`
-}
-
 function ViewerApp() {
   const pdfViewer = usePdfViewer({ autoOpen: true })
   const imageOverlays = useImageOverlays()
+  const canvasWrapperRef = useRef<HTMLDivElement | null>(null)
 
   const currentPageOverlays = imageOverlays.getOverlaysForPage(pdfViewer.currentPage)
 
-  const handleInsertImage = useCallback(async () => {
-    if (!pdfViewer.pdfPageSize) return
+  const handleImageBytes = useCallback(
+    async (bytes: Uint8Array, mimeType: string) => {
+      if (!pdfViewer.pdfPageSize) return
 
+      const dataUrl = bytesToDataUrl(bytes, mimeType)
+      const { width: naturalWidth, height: naturalHeight } = await loadImageSize(dataUrl)
+
+      imageOverlays.addOverlay(
+        pdfViewer.currentPage,
+        dataUrl,
+        bytes,
+        mimeType as ImageMimeType,
+        pdfViewer.pdfPageSize.width,
+        pdfViewer.pdfPageSize.height,
+        naturalWidth,
+        naturalHeight
+      )
+    },
+    [pdfViewer.currentPage, pdfViewer.pdfPageSize, imageOverlays.addOverlay]
+  )
+
+  const handleInsertImage = useCallback(async () => {
     const result = await window.electronAPI.openImage()
     if (!result) return
+    await handleImageBytes(result.bytes, result.mimeType)
+  }, [handleImageBytes])
 
-    const dataUrl = bytesToDataUrl(result.bytes, result.mimeType)
+  const isPdfLoaded = !!pdfViewer.fileName && !pdfViewer.isLoading
 
-    const { width: naturalWidth, height: naturalHeight } = await loadImageSize(dataUrl)
-
-    imageOverlays.addOverlay(
-      pdfViewer.currentPage,
-      dataUrl,
-      result.bytes,
-      result.mimeType as ImageMimeType,
-      pdfViewer.pdfPageSize.width,
-      pdfViewer.pdfPageSize.height,
-      naturalWidth,
-      naturalHeight
-    )
-  }, [pdfViewer.currentPage, pdfViewer.pdfPageSize, imageOverlays.addOverlay])
+  useImagePaste(handleImageBytes, isPdfLoaded)
+  const { isDragOver } = useImageDrop(canvasWrapperRef, handleImageBytes, isPdfLoaded)
 
   const handleSave = useCallback(async () => {
     if (!pdfViewer.filePath) return
@@ -142,6 +139,8 @@ function ViewerApp() {
         onInsertImage={handleInsertImage}
         onSave={handleSave}
         canSave={imageOverlays.overlays.length > 0}
+        canvasWrapperRef={canvasWrapperRef}
+        isDragOver={isDragOver}
       />
     </div>
   )

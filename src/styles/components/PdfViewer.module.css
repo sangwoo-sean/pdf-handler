@@ -95,6 +95,11 @@
   display: inline-block;
 }
 
+.canvasWrapperDragOver {
+  outline: 3px dashed #2196f3;
+  outline-offset: -3px;
+}
+
 .canvas {
   display: block;
   max-width: 100%;
