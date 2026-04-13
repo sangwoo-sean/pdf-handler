@@ -1,7 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { readFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import { getPageCount, mergePdfs } from './pdf-service'
+import { getPageCount, mergePdfs, savePdfWithImages } from './pdf-service'
+import type { SerializedOverlay } from './pdf-service'
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -46,6 +47,7 @@ function createViewerWindow(): BrowserWindow {
 }
 
 const allowedPdfPaths = new Set<string>()
+const allowedImagePaths = new Set<string>()
 
 let viewerWindow: BrowserWindow | null = null
 
@@ -114,6 +116,62 @@ function registerIpcHandlers(): void {
     const buffer = await readFile(filePath)
     return new Uint8Array(buffer)
   })
+
+  ipcMain.handle('dialog:open-image', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg'] }]
+    })
+
+    if (canceled || filePaths.length === 0) {
+      return null
+    }
+
+    const filePath = filePaths[0]
+    try {
+      allowedImagePaths.add(filePath)
+      const buffer = await readFile(filePath)
+      const ext = filePath.toLowerCase().split('.').pop()
+      const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg'
+      return { bytes: new Uint8Array(buffer), mimeType, name: basename(filePath) }
+    } catch {
+      return null
+    }
+  })
+
+  ipcMain.handle(
+    'pdf:save-with-images',
+    async (_event, data: unknown) => {
+      const parsed = data as {
+        sourcePath: string
+        overlays: SerializedOverlay[]
+      }
+
+      if (
+        typeof parsed?.sourcePath !== 'string' ||
+        !allowedPdfPaths.has(parsed.sourcePath)
+      ) {
+        return { success: false, error: 'Source PDF not authorized' }
+      }
+
+      try {
+        const { canceled, filePath } = await dialog.showSaveDialog({
+          defaultPath: 'output.pdf',
+          filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+        })
+
+        if (canceled || !filePath) {
+          return { success: false, error: 'cancelled' }
+        }
+
+        await savePdfWithImages(parsed.sourcePath, filePath, parsed.overlays)
+        return { success: true }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        return { success: false, error: message }
+      }
+    }
+  )
 
   ipcMain.handle('pdf:merge', async (_event, filePaths: unknown) => {
     if (!Array.isArray(filePaths) || filePaths.length === 0) {

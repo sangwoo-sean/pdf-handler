@@ -1,7 +1,19 @@
+import type { ImageOverlay } from '../types/image-overlay'
 import type { UsePdfViewerReturn } from '../hooks/usePdfViewer'
+import { ImageOverlayLayer } from './ImageOverlayLayer'
 import styles from '../styles/components/PdfViewer.module.css'
 
-type PdfViewerProps = Omit<UsePdfViewerReturn, 'filePath'>
+interface PdfViewerProps extends Omit<UsePdfViewerReturn, 'filePath' | 'pdfPageSize'> {
+  readonly overlays: readonly ImageOverlay[]
+  readonly onUpdateOverlay: (
+    id: string,
+    patch: Partial<Pick<ImageOverlay, 'x' | 'y' | 'width' | 'height'>>
+  ) => void
+  readonly onRemoveOverlay: (id: string) => void
+  readonly onInsertImage: () => void
+  readonly onSave: () => void
+  readonly canSave: boolean
+}
 
 export function PdfViewer({
   fileName,
@@ -11,13 +23,40 @@ export function PdfViewer({
   canvasRef,
   openFile,
   nextPage,
-  prevPage
+  prevPage,
+  overlays,
+  onUpdateOverlay,
+  onRemoveOverlay,
+  onInsertImage,
+  onSave,
+  canSave
 }: PdfViewerProps) {
   return (
     <div className={styles.viewer}>
-      <button className={styles.openButton} onClick={openFile} type="button">
-        {fileName ? '다른 파일 열기' : '파일 열기'}
-      </button>
+      <div className={styles.toolbar}>
+        <button className={styles.openButton} onClick={openFile} type="button">
+          {fileName ? '다른 파일 열기' : '파일 열기'}
+        </button>
+        {fileName && !isLoading && (
+          <>
+            <button
+              className={styles.insertButton}
+              onClick={onInsertImage}
+              type="button"
+            >
+              이미지 삽입
+            </button>
+            <button
+              className={styles.saveButton}
+              onClick={onSave}
+              disabled={!canSave}
+              type="button"
+            >
+              저장
+            </button>
+          </>
+        )}
+      </div>
 
       {isLoading && <p className={styles.loading}>로딩 중...</p>}
 
@@ -26,7 +65,17 @@ export function PdfViewer({
         className={styles.canvasContainer}
         style={{ display: fileName && !isLoading ? undefined : 'none' }}
       >
-        <canvas ref={canvasRef} className={styles.canvas} />
+        <div className={styles.canvasWrapper}>
+          <canvas ref={canvasRef} className={styles.canvas} />
+          {canvasRef.current && overlays.length > 0 && (
+            <ImageOverlayLayer
+              overlays={overlays}
+              canvas={canvasRef.current}
+              onUpdate={onUpdateOverlay}
+              onRemove={onRemoveOverlay}
+            />
+          )}
+        </div>
       </div>
 
       {fileName && !isLoading && (

@@ -11,12 +11,18 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 const RENDER_SCALE = 1.5
 
+export interface PdfPageSize {
+  readonly width: number
+  readonly height: number
+}
+
 export interface UsePdfViewerReturn {
   readonly fileName: string | null
   readonly filePath: string | null
   readonly isLoading: boolean
   readonly currentPage: number
   readonly totalPages: number
+  readonly pdfPageSize: PdfPageSize | null
   readonly canvasRef: React.RefObject<HTMLCanvasElement | null>
   readonly openFile: () => Promise<void>
   readonly nextPage: () => void
@@ -41,6 +47,7 @@ export function usePdfViewer(options?: { autoOpen?: boolean }): UsePdfViewerRetu
   const [isLoading, setIsLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [pdfPageSize, setPdfPageSize] = useState<PdfPageSize | null>(null)
 
   const pdfDocRef = useRef<PDFDocumentProxy | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -65,6 +72,9 @@ export function usePdfViewer(options?: { autoOpen?: boolean }): UsePdfViewerRetu
     const viewport = page.getViewport({ scale: RENDER_SCALE })
     canvas.width = viewport.width
     canvas.height = viewport.height
+
+    const unscaledViewport = page.getViewport({ scale: 1 })
+    setPdfPageSize({ width: unscaledViewport.width, height: unscaledViewport.height })
 
     const canvasContext = canvas.getContext('2d')
     if (!canvasContext) return
@@ -150,6 +160,7 @@ export function usePdfViewer(options?: { autoOpen?: boolean }): UsePdfViewerRetu
     isLoading,
     currentPage,
     totalPages,
+    pdfPageSize,
     canvasRef,
     openFile,
     nextPage,

@@ -6,9 +6,15 @@
   min-height: 0;
 }
 
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
 .openButton {
-  display: block;
-  width: 100%;
+  flex: 1;
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
@@ -18,11 +24,49 @@
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s;
-  flex-shrink: 0;
 }
 
 .openButton:hover {
   background: #eee;
+}
+
+.insertButton {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1565c0;
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.insertButton:hover {
+  background: #bbdefb;
+}
+
+.saveButton {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2e7d32;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #c8e6c9;
+}
+
+.saveButton:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .fileName {
@@ -44,6 +88,11 @@
   justify-content: center;
   align-items: flex-start;
   background: #fafafa;
+}
+
+.canvasWrapper {
+  position: relative;
+  display: inline-block;
 }
 
 .canvas {
