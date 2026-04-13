@@ -5,6 +5,7 @@ interface ElectronAPI {
   openFile: () => Promise<{ name: string; path: string; pageCount: number } | null>
   readPdfFile: (filePath: string) => Promise<Uint8Array>
   mergePdfs: (filePaths: string[]) => Promise<{ success: boolean; error?: string }>
+  openViewer: () => Promise<void>
 }
 
 declare global {

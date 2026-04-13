@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import * as pdfjs from 'pdfjs-dist'
-import type { PDFDocumentProxy } from 'pdfjs-dist'
+// pdfjs-dist 5.x modern 빌드는 Chrome 139+ API(toHex, getOrInsertComputed)를 사용
+// Electron 35 (Chromium ~134)에서는 legacy 빌드가 필요 (폴리필 내장)
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
+import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
+  'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
   import.meta.url
 ).href
 
@@ -21,7 +23,7 @@ export interface UsePdfViewerReturn {
   readonly prevPage: () => void
 }
 
-function cancelRenderTask(ref: React.RefObject<pdfjs.RenderTask | null>): void {
+function cancelRenderTask(ref: React.RefObject<RenderTask | null>): void {
   if (ref.current) {
     ref.current.cancel()
     ref.current = null
@@ -33,7 +35,7 @@ function isRenderCancelled(error: unknown): boolean {
   return error.message.includes('cancel') || error.name.includes('Cancel')
 }
 
-export function usePdfViewer(): UsePdfViewerReturn {
+export function usePdfViewer(options?: { autoOpen?: boolean }): UsePdfViewerReturn {
   const [fileName, setFileName] = useState<string | null>(null)
   const [filePath, setFilePath] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -42,7 +44,7 @@ export function usePdfViewer(): UsePdfViewerReturn {
 
   const pdfDocRef = useRef<PDFDocumentProxy | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const renderTaskRef = useRef<pdfjs.RenderTask | null>(null)
+  const renderTaskRef = useRef<RenderTask | null>(null)
 
   const renderPage = useCallback(async (pageNumber: number) => {
     const pdfDoc = pdfDocRef.current
@@ -64,10 +66,13 @@ export function usePdfViewer(): UsePdfViewerReturn {
     canvas.width = viewport.width
     canvas.height = viewport.height
 
-    const context = canvas.getContext('2d')
-    if (!context) return
+    const canvasContext = canvas.getContext('2d')
+    if (!canvasContext) return
 
-    const renderTask = page.render({ canvasContext: context, viewport })
+    const renderTask = page.render({
+      canvasContext,
+      viewport
+    } as Parameters<typeof page.render>[0])
     renderTaskRef.current = renderTask
 
     try {
@@ -93,6 +98,8 @@ export function usePdfViewer(): UsePdfViewerReturn {
       }
     }
   }, [])
+
+  const openFileRef = useRef(false)
 
   const openFile = useCallback(async () => {
     const result = await window.electronAPI.openFile()
@@ -121,6 +128,13 @@ export function usePdfViewer(): UsePdfViewerReturn {
       setIsLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    if (options?.autoOpen && !openFileRef.current) {
+      openFileRef.current = true
+      openFile()
+    }
+  }, [options?.autoOpen, openFile])
 
   const nextPage = useCallback(() => {
     setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev))

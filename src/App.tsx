@@ -6,15 +6,16 @@ import { AddFileButton } from './components/AddFileButton'
 import { FileList } from './components/FileList'
 import { MergeButton } from './components/MergeButton'
 import { PdfViewer } from './components/PdfViewer'
+import { ViewerLauncher } from './components/ViewerLauncher'
 import styles from './styles/App.module.css'
 
-export function App() {
+const isViewerWindow = window.location.hash === '#viewer'
+
+function MainApp() {
   const [view, setView] = useState<ViewType>('merge')
 
   const { files, isMerging, totalPages, addFiles, removeFile, moveUp, moveDown, merge } =
     useFileList()
-
-  const pdfViewer = usePdfViewer()
 
   return (
     <div className={styles.container}>
@@ -45,18 +46,30 @@ export function App() {
         </>
       )}
 
-      {view === 'viewer' && (
-        <PdfViewer
-          fileName={pdfViewer.fileName}
-          isLoading={pdfViewer.isLoading}
-          currentPage={pdfViewer.currentPage}
-          totalPages={pdfViewer.totalPages}
-          canvasRef={pdfViewer.canvasRef}
-          openFile={pdfViewer.openFile}
-          nextPage={pdfViewer.nextPage}
-          prevPage={pdfViewer.prevPage}
-        />
-      )}
+      {view === 'viewer' && <ViewerLauncher />}
     </div>
   )
+}
+
+function ViewerApp() {
+  const pdfViewer = usePdfViewer({ autoOpen: true })
+
+  return (
+    <div className={styles.viewerContainer}>
+      <PdfViewer
+        fileName={pdfViewer.fileName}
+        isLoading={pdfViewer.isLoading}
+        currentPage={pdfViewer.currentPage}
+        totalPages={pdfViewer.totalPages}
+        canvasRef={pdfViewer.canvasRef}
+        openFile={pdfViewer.openFile}
+        nextPage={pdfViewer.nextPage}
+        prevPage={pdfViewer.prevPage}
+      />
+    </div>
+  )
+}
+
+export function App() {
+  return isViewerWindow ? <ViewerApp /> : <MainApp />
 }

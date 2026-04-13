@@ -24,9 +24,43 @@ function createWindow(): BrowserWindow {
   return win
 }
 
+function createViewerWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 900,
+    minWidth: 600,
+    minHeight: 500,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: true
+    }
+  })
+
+  if (process.env.ELECTRON_RENDERER_URL) {
+    win.loadURL(`${process.env.ELECTRON_RENDERER_URL}#viewer`)
+  } else {
+    win.loadFile(join(__dirname, '../renderer/index.html'), { hash: 'viewer' })
+  }
+
+  return win
+}
+
 const allowedPdfPaths = new Set<string>()
 
+let viewerWindow: BrowserWindow | null = null
+
 function registerIpcHandlers(): void {
+  ipcMain.handle('window:open-viewer', () => {
+    if (viewerWindow && !viewerWindow.isDestroyed()) {
+      viewerWindow.focus()
+      return
+    }
+    viewerWindow = createViewerWindow()
+    viewerWindow.on('closed', () => {
+      viewerWindow = null
+    })
+  })
+
   ipcMain.handle('dialog:open-files', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       properties: ['openFile', 'multiSelections'],

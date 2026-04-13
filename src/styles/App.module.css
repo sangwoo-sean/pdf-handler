@@ -6,9 +6,24 @@
   color: #1a1a1a;
 }
 
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 20px;
+}
+
 .summary {
   text-align: center;
   font-size: 14px;
   color: #666;
   margin: 12px 0 16px;
+}
+
+.viewerContainer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1a1a1a;
 }

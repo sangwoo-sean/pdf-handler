@@ -4,7 +4,7 @@ import { usePdfViewer } from '../src/hooks/usePdfViewer'
 
 let mockNumPages = 5
 
-vi.mock('pdfjs-dist', () => {
+vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => {
   const mockPage = {
     getViewport: () => ({ width: 300, height: 400 }),
     render: () => ({
