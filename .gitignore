@@ -5,3 +5,4 @@ dist/
 *.exe
 *.AppImage
 .DS_Store
+.worktrees/
