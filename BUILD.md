@@ -24,8 +24,14 @@ npm install
 ### 3. 빌드
 
 ```powershell
+# Windows에서 symlink 권한 문제로 빌드 실패 시 아래 환경변수를 설정하세요
+$env:CSC_IDENTITY_AUTO_DISCOVERY="false"
+
 npm run package
 ```
+
+> **참고**: Windows에서 `Cannot create symbolic link` 에러가 발생하면, 코드 서명 캐시의 symlink 생성 권한 문제입니다.
+> `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign` 폴더를 삭제한 뒤 위 환경변수를 설정하고 다시 빌드하세요.
 
 빌드가 완료되면 `dist/` 폴더에 설치 파일이 생성됩니다:
 

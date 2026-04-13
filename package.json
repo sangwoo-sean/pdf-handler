@@ -40,7 +40,9 @@
           "target": "nsis",
           "arch": ["x64"]
         }
-      ]
+      ],
+      "forceCodeSigning": false,
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
