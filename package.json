@@ -1,6 +1,6 @@
 {
   "name": "pdf-merger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simple PDF merger desktop application",
   "main": "./out/main/index.js",
   "scripts": {
@@ -24,6 +24,12 @@
     },
     "files": [
       "out/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "build/icon.png",
+        "to": "icon.png"
+      }
     ],
     "fileAssociations": [
       {
@@ -49,8 +55,7 @@
           "arch": ["x64"]
         }
       ],
-      "forceCodeSigning": false,
-      "signAndEditExecutable": false
+      "forceCodeSigning": false
     },
     "nsis": {
       "oneClick": false,

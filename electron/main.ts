@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeImage } from 'electron'
 import { readFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { getPageCount, mergePdfs, savePdfWithImages } from './pdf-service'
@@ -15,12 +15,18 @@ function findPdfInArgs(argv: string[]): string | null {
 
 let pendingFilePath: string | null = findPdfInArgs(process.argv)
 
+const iconPath = app.isPackaged
+  ? join(process.resourcesPath, 'icon.png')
+  : join(__dirname, '../../build/icon.png')
+const appIcon = nativeImage.createFromPath(iconPath)
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 480,
     height: 600,
     minWidth: 400,
     minHeight: 500,
+    icon: appIcon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true
@@ -42,6 +48,7 @@ function createViewerWindow(): BrowserWindow {
     height: 900,
     minWidth: 600,
     minHeight: 500,
+    icon: appIcon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true
