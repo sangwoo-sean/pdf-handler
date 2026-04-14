@@ -38,7 +38,7 @@ export function DraggableImage({
   onSelect
 }: DraggableImageProps) {
   const [dragMode, setDragMode] = useState<DragMode>(null)
-  const startRef = useRef({ mouseX: 0, mouseY: 0, x: 0, y: 0, w: 0, h: 0 })
+  const startRef = useRef({ mouseX: 0, mouseY: 0, x: 0, y: 0, w: 0, h: 0, aspectRatio: 1 })
   const rotateStartRef = useRef({ startAngle: 0, startRotation: 0 })
   const wrapperRef = useRef<HTMLDivElement | null>(null)
 
@@ -58,7 +58,8 @@ export function DraggableImage({
         x: currentDisplay.x,
         y: currentDisplay.y,
         w: currentDisplay.width,
-        h: currentDisplay.height
+        h: currentDisplay.height,
+        aspectRatio: currentDisplay.width / currentDisplay.height
       }
 
       if (mode === 'rotate' && wrapperRef.current) {
@@ -85,12 +86,29 @@ export function DraggableImage({
       const { x, y, w, h } = startRef.current
 
       if (dragMode === 'move') {
-        const newDisplay = { x: x + dx, y: y + dy, width: w, height: h }
+        let finalDx = dx
+        let finalDy = dy
+        if (e.shiftKey) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            finalDy = 0
+          } else {
+            finalDx = 0
+          }
+        }
+        const newDisplay = { x: x + finalDx, y: y + finalDy, width: w, height: h }
         const pdfRect = displayToPdf(newDisplay, canvas)
         onUpdate(overlay.id, { x: pdfRect.x, y: pdfRect.y })
       } else if (dragMode === 'resize') {
-        const newW = Math.max(MIN_DISPLAY_SIZE, w + dx)
-        const newH = Math.max(MIN_DISPLAY_SIZE, h + dy)
+        let newW: number
+        let newH: number
+        if (e.shiftKey) {
+          const delta = (dx + dy) / 2
+          newW = Math.max(MIN_DISPLAY_SIZE, w + delta)
+          newH = Math.max(MIN_DISPLAY_SIZE, newW / startRef.current.aspectRatio)
+        } else {
+          newW = Math.max(MIN_DISPLAY_SIZE, w + dx)
+          newH = Math.max(MIN_DISPLAY_SIZE, h + dy)
+        }
         const newDisplay = { x, y, width: newW, height: newH }
         const pdfRect = displayToPdf(newDisplay, canvas)
         onUpdate(overlay.id, { width: pdfRect.width, height: pdfRect.height })

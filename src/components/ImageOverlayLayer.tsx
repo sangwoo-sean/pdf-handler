@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ImageOverlay } from '../types/image-overlay'
 import { DraggableImage } from './DraggableImage'
 import styles from '../styles/components/ImageOverlayLayer.module.css'
@@ -24,6 +24,31 @@ export function ImageOverlayLayer({
   const handleLayerClick = useCallback(() => {
     setSelectedId(null)
   }, [])
+
+  useEffect(() => {
+    if (!selectedId) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const STEP = 1
+      let dx = 0
+      let dy = 0
+      switch (e.key) {
+        case 'ArrowLeft':  dx = -STEP; break
+        case 'ArrowRight': dx = STEP;  break
+        case 'ArrowUp':    dy = STEP;  break
+        case 'ArrowDown':  dy = -STEP; break
+        default: return
+      }
+      e.preventDefault()
+      const overlay = overlays.find((o) => o.id === selectedId)
+      if (overlay) {
+        onUpdate(selectedId, { x: overlay.x + dx, y: overlay.y + dy })
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedId, overlays, onUpdate])
 
   return (
     <div className={styles.layer} onClick={handleLayerClick}>
