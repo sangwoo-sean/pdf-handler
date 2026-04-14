@@ -4,6 +4,17 @@ import { basename, join } from 'node:path'
 import { getPageCount, mergePdfs, savePdfWithImages } from './pdf-service'
 import type { SerializedOverlay } from './pdf-service'
 
+function findPdfInArgs(argv: string[]): string | null {
+  for (let i = 1; i < argv.length; i++) {
+    if (argv[i].toLowerCase().endsWith('.pdf')) {
+      return argv[i]
+    }
+  }
+  return null
+}
+
+let pendingFilePath: string | null = findPdfInArgs(process.argv)
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 480,
@@ -51,7 +62,28 @@ const allowedImagePaths = new Set<string>()
 
 let viewerWindow: BrowserWindow | null = null
 
+function openPdfInViewer(filePath: string): void {
+  pendingFilePath = filePath
+  allowedPdfPaths.add(filePath)
+
+  if (viewerWindow && !viewerWindow.isDestroyed()) {
+    viewerWindow.focus()
+    viewerWindow.webContents.send('open-file', filePath)
+  } else {
+    viewerWindow = createViewerWindow()
+    viewerWindow.on('closed', () => {
+      viewerWindow = null
+    })
+  }
+}
+
 function registerIpcHandlers(): void {
+  ipcMain.handle('app:get-open-file-path', () => {
+    const filePath = pendingFilePath
+    pendingFilePath = null
+    return filePath
+  })
+
   ipcMain.handle('window:open-viewer', () => {
     if (viewerWindow && !viewerWindow.isDestroyed()) {
       viewerWindow.focus()
@@ -200,19 +232,53 @@ function registerIpcHandlers(): void {
   })
 }
 
-app.whenReady().then(() => {
-  registerIpcHandlers()
-  createWindow()
+const gotTheLock = app.requestSingleInstanceLock()
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (_event, argv) => {
+    const filePath = findPdfInArgs(argv)
+    if (filePath) {
+      openPdfInViewer(filePath)
+    } else {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) {
+        if (win.isMinimized()) win.restore()
+        win.focus()
+      }
     }
   })
-})
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+  // macOS: 파일 연결로 앱이 열릴 때
+  app.on('open-file', (event, filePath) => {
+    event.preventDefault()
+    if (app.isReady()) {
+      openPdfInViewer(filePath)
+    } else {
+      pendingFilePath = filePath
+    }
+  })
+
+  app.whenReady().then(() => {
+    registerIpcHandlers()
+
+    if (pendingFilePath) {
+      openPdfInViewer(pendingFilePath)
+    } else {
+      createWindow()
+    }
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow()
+      }
+    })
+  })
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit()
+    }
+  })
+}

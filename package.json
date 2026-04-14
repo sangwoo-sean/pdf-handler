@@ -25,6 +25,14 @@
     "files": [
       "out/**/*"
     ],
+    "fileAssociations": [
+      {
+        "ext": "pdf",
+        "name": "PDF Document",
+        "role": "Viewer",
+        "mimeType": "application/pdf"
+      }
+    ],
     "mac": {
       "target": [
         {

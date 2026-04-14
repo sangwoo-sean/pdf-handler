@@ -111,10 +111,7 @@ export function usePdfViewer(options?: { autoOpen?: boolean }): UsePdfViewerRetu
 
   const openFileRef = useRef(false)
 
-  const openFile = useCallback(async () => {
-    const result = await window.electronAPI.openFile()
-    if (!result) return
-
+  const loadPdfFromPath = useCallback(async (path: string) => {
     setIsLoading(true)
     try {
       cancelRenderTask(renderTaskRef)
@@ -123,12 +120,12 @@ export function usePdfViewer(options?: { autoOpen?: boolean }): UsePdfViewerRetu
         pdfDocRef.current = null
       }
 
-      const bytes = await window.electronAPI.readPdfFile(result.path)
+      const bytes = await window.electronAPI.readPdfFile(path)
       const pdfDoc = await pdfjs.getDocument({ data: bytes }).promise
 
       pdfDocRef.current = pdfDoc
-      setFileName(result.name)
-      setFilePath(result.path)
+      setFileName(path.replace(/.*[\\/]/, ''))
+      setFilePath(path)
       setTotalPages(pdfDoc.numPages)
       setCurrentPage(1)
     } catch (error) {
@@ -139,12 +136,31 @@ export function usePdfViewer(options?: { autoOpen?: boolean }): UsePdfViewerRetu
     }
   }, [])
 
+  const openFile = useCallback(async () => {
+    const result = await window.electronAPI.openFile()
+    if (!result) return
+    await loadPdfFromPath(result.path)
+  }, [loadPdfFromPath])
+
   useEffect(() => {
     if (options?.autoOpen && !openFileRef.current) {
       openFileRef.current = true
-      openFile()
+      ;(async () => {
+        const pendingPath = await window.electronAPI.getOpenFilePath()
+        if (pendingPath) {
+          await loadPdfFromPath(pendingPath)
+        } else {
+          await openFile()
+        }
+      })()
     }
-  }, [options?.autoOpen, openFile])
+  }, [options?.autoOpen, openFile, loadPdfFromPath])
+
+  useEffect(() => {
+    window.electronAPI.onOpenFile((path) => {
+      loadPdfFromPath(path)
+    })
+  }, [loadPdfFromPath])
 
   const nextPage = useCallback(() => {
     setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev))
