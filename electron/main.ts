@@ -13,7 +13,8 @@ function findPdfInArgs(argv: string[]): string | null {
   return null
 }
 
-let pendingFilePath: string | null = findPdfInArgs(process.argv)
+let initialPendingPath: string | null = findPdfInArgs(process.argv)
+const pendingPaths = new Map<number, string>()
 
 const iconPath = app.isPackaged
   ? join(process.resourcesPath, 'icon.png')
@@ -67,39 +68,29 @@ function createViewerWindow(): BrowserWindow {
 const allowedPdfPaths = new Set<string>()
 const allowedImagePaths = new Set<string>()
 
-let viewerWindow: BrowserWindow | null = null
-
 function openPdfInViewer(filePath: string): void {
-  pendingFilePath = filePath
   allowedPdfPaths.add(filePath)
-
-  if (viewerWindow && !viewerWindow.isDestroyed()) {
-    viewerWindow.focus()
-    viewerWindow.webContents.send('open-file', filePath)
-  } else {
-    viewerWindow = createViewerWindow()
-    viewerWindow.on('closed', () => {
-      viewerWindow = null
-    })
-  }
+  const win = createViewerWindow()
+  pendingPaths.set(win.webContents.id, filePath)
+  win.on('closed', () => {
+    pendingPaths.delete(win.webContents.id)
+  })
 }
 
 function registerIpcHandlers(): void {
-  ipcMain.handle('app:get-open-file-path', () => {
-    const filePath = pendingFilePath
-    pendingFilePath = null
-    return filePath
+  ipcMain.handle('app:get-open-file-path', (event) => {
+    const perWindowPath = pendingPaths.get(event.sender.id)
+    if (perWindowPath) {
+      pendingPaths.delete(event.sender.id)
+      return perWindowPath
+    }
+    const initial = initialPendingPath
+    initialPendingPath = null
+    return initial
   })
 
   ipcMain.handle('window:open-viewer', () => {
-    if (viewerWindow && !viewerWindow.isDestroyed()) {
-      viewerWindow.focus()
-      return
-    }
-    viewerWindow = createViewerWindow()
-    viewerWindow.on('closed', () => {
-      viewerWindow = null
-    })
+    createViewerWindow()
   })
 
   ipcMain.handle('dialog:open-files', async () => {
@@ -263,15 +254,17 @@ if (!gotTheLock) {
     if (app.isReady()) {
       openPdfInViewer(filePath)
     } else {
-      pendingFilePath = filePath
+      initialPendingPath = filePath
     }
   })
 
   app.whenReady().then(() => {
     registerIpcHandlers()
 
-    if (pendingFilePath) {
-      openPdfInViewer(pendingFilePath)
+    if (initialPendingPath) {
+      const startupPath = initialPendingPath
+      initialPendingPath = null
+      openPdfInViewer(startupPath)
     } else {
       createWindow()
     }
