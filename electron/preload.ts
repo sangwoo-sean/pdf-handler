@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onOpenFile: (callback: (filePath: string) => void) => {
     ipcRenderer.on('open-file', (_event, filePath) => callback(filePath))
   },
+  onPrintRequest: (callback: () => void) => {
+    ipcRenderer.on('viewer:print', () => callback())
+  },
   savePdfWithImages: (data: {
     sourcePath: string
     overlays: Array<{

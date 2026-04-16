@@ -10,6 +10,7 @@ interface ElectronAPI {
   getVersion: () => Promise<string>
   getOpenFilePath: () => Promise<string | null>
   onOpenFile: (callback: (filePath: string) => void) => void
+  onPrintRequest: (callback: () => void) => void
   savePdfWithImages: (data: {
     sourcePath: string
     overlays: Array<{

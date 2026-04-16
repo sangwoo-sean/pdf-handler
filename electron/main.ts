@@ -15,7 +15,6 @@ function findPdfInArgs(argv: string[]): string | null {
 
 let initialPendingPath: string | null = findPdfInArgs(process.argv)
 const pendingPaths = new Map<number, string>()
-const viewerPaths = new Map<number, string>()
 
 const iconPath = app.isPackaged
   ? join(process.resourcesPath, 'icon.png')
@@ -59,11 +58,6 @@ function createViewerWindow(): BrowserWindow {
 
   win.setMenu(buildViewerMenu(win))
 
-  const webContentsId = win.webContents.id
-  win.on('closed', () => {
-    viewerPaths.delete(webContentsId)
-  })
-
   if (process.env.ELECTRON_RENDERER_URL) {
     win.loadURL(`${process.env.ELECTRON_RENDERER_URL}#viewer`)
   } else {
@@ -77,29 +71,8 @@ const allowedPdfPaths = new Set<string>()
 const allowedImagePaths = new Set<string>()
 
 function printCurrentPdf(win: BrowserWindow): void {
-  const pdfPath = viewerPaths.get(win.webContents.id)
-  if (!pdfPath) return
-
-  const printWin = new BrowserWindow({
-    show: false,
-    webPreferences: { plugins: true, sandbox: true }
-  })
-
-  const closePrintWin = (): void => {
-    if (!printWin.isDestroyed()) {
-      printWin.close()
-    }
-  }
-
-  printWin.webContents.once('did-finish-load', () => {
-    printWin.webContents.print({ silent: false }, () => {
-      closePrintWin()
-    })
-  })
-
-  printWin.loadFile(pdfPath).catch(() => {
-    closePrintWin()
-  })
+  if (win.isDestroyed()) return
+  win.webContents.send('viewer:print')
 }
 
 function buildViewerMenu(win: BrowserWindow): Menu {
@@ -135,7 +108,6 @@ function openPdfInViewer(filePath: string): void {
   const win = createViewerWindow()
   const webContentsId = win.webContents.id
   pendingPaths.set(webContentsId, filePath)
-  viewerPaths.set(webContentsId, filePath)
   win.on('closed', () => {
     pendingPaths.delete(webContentsId)
   })
@@ -185,7 +157,7 @@ function registerIpcHandlers(): void {
     return results
   })
 
-  ipcMain.handle('dialog:open-file', async (event) => {
+  ipcMain.handle('dialog:open-file', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       properties: ['openFile'],
       filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
@@ -199,7 +171,6 @@ function registerIpcHandlers(): void {
     try {
       const pageCount = await getPageCount(filePath)
       allowedPdfPaths.add(filePath)
-      viewerPaths.set(event.sender.id, filePath)
       return { name: basename(filePath), path: filePath, pageCount }
     } catch {
       return null

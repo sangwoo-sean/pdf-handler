@@ -173,6 +173,69 @@ export function usePdfViewer(options?: { autoOpen?: boolean }): UsePdfViewerRetu
     })
   }, [loadPdfFromPath])
 
+  const printingRef = useRef(false)
+  const print = useCallback(async () => {
+    const pdfDoc = pdfDocRef.current
+    if (!pdfDoc || printingRef.current) return
+    printingRef.current = true
+
+    const container = document.createElement('div')
+    container.className = 'pdf-print-container'
+
+    const style = document.createElement('style')
+    style.textContent = `
+      .pdf-print-container { position: absolute; left: -99999px; top: -99999px; }
+      @media print {
+        body > *:not(.pdf-print-container) { display: none !important; }
+        .pdf-print-container { position: static !important; left: auto !important; top: auto !important; }
+        .pdf-print-container img { width: 100%; display: block; break-after: page; page-break-after: always; }
+        .pdf-print-container img:last-child { break-after: auto; page-break-after: auto; }
+        @page { size: auto; margin: 0; }
+      }
+    `
+
+    const cleanup = (): void => {
+      container.remove()
+      style.remove()
+      printingRef.current = false
+    }
+
+    try {
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        const page = await pdfDoc.getPage(pageNum)
+        const viewport = page.getViewport({ scale: 2 })
+        const canvas = document.createElement('canvas')
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) continue
+        await page.render({
+          canvasContext: ctx,
+          viewport
+        } as Parameters<typeof page.render>[0]).promise
+        const img = document.createElement('img')
+        img.src = canvas.toDataURL('image/png')
+        container.appendChild(img)
+      }
+
+      document.head.appendChild(style)
+      document.body.appendChild(container)
+      window.addEventListener('afterprint', cleanup, { once: true })
+
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      window.print()
+    } catch (error) {
+      console.error('Print failed:', error)
+      cleanup()
+    }
+  }, [])
+
+  useEffect(() => {
+    window.electronAPI.onPrintRequest(() => {
+      print().catch(() => {})
+    })
+  }, [print])
+
   const nextPage = useCallback(() => {
     setCurrentPage((prev) => (prev < totalPages ? prev + 1 : prev))
   }, [totalPages])
