@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFileList } from './hooks/useFileList'
 import { usePdfViewer } from './hooks/usePdfViewer'
 import { useImageOverlays } from './hooks/useImageOverlays'
@@ -18,9 +18,14 @@ const isViewerWindow = window.location.hash === '#viewer'
 
 function MainApp() {
   const [view, setView] = useState<ViewType>('merge')
+  const [version, setVersion] = useState<string>('')
 
   const { files, isMerging, totalPages, addFiles, removeFile, moveUp, moveDown, merge } =
     useFileList()
+
+  useEffect(() => {
+    window.electronAPI.getVersion().then(setVersion)
+  }, [])
 
   return (
     <div className={styles.container}>
@@ -52,6 +57,8 @@ function MainApp() {
       )}
 
       {view === 'viewer' && <ViewerLauncher />}
+
+      {version && <p className={styles.version}>v{version}</p>}
     </div>
   )
 }

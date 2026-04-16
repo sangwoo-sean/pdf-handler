@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   mergePdfs: (filePaths: string[]) => ipcRenderer.invoke('pdf:merge', filePaths),
   openViewer: () => ipcRenderer.invoke('window:open-viewer'),
   openImage: () => ipcRenderer.invoke('dialog:open-image'),
+  getVersion: () => ipcRenderer.invoke('app:get-version'),
   getOpenFilePath: () => ipcRenderer.invoke('app:get-open-file-path'),
   onOpenFile: (callback: (filePath: string) => void) => {
     ipcRenderer.on('open-file', (_event, filePath) => callback(filePath))

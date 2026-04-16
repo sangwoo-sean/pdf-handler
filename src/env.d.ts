@@ -7,6 +7,7 @@ interface ElectronAPI {
   mergePdfs: (filePaths: string[]) => Promise<{ success: boolean; error?: string }>
   openViewer: () => Promise<void>
   openImage: () => Promise<{ bytes: Uint8Array; mimeType: string; name: string } | null>
+  getVersion: () => Promise<string>
   getOpenFilePath: () => Promise<string | null>
   onOpenFile: (callback: (filePath: string) => void) => void
   savePdfWithImages: (data: {

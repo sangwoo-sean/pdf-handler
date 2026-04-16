@@ -79,6 +79,8 @@ function openPdfInViewer(filePath: string): void {
 }
 
 function registerIpcHandlers(): void {
+  ipcMain.handle('app:get-version', () => app.getVersion())
+
   ipcMain.handle('app:get-open-file-path', (event) => {
     const perWindowPath = pendingPaths.get(event.sender.id)
     if (perWindowPath) {
