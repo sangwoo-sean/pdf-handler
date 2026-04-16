@@ -71,9 +71,10 @@ const allowedImagePaths = new Set<string>()
 function openPdfInViewer(filePath: string): void {
   allowedPdfPaths.add(filePath)
   const win = createViewerWindow()
-  pendingPaths.set(win.webContents.id, filePath)
+  const webContentsId = win.webContents.id
+  pendingPaths.set(webContentsId, filePath)
   win.on('closed', () => {
-    pendingPaths.delete(win.webContents.id)
+    pendingPaths.delete(webContentsId)
   })
 }
 
