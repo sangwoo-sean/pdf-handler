@@ -1,6 +1,6 @@
 {
   "name": "pdf-merger",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Simple PDF merger desktop application",
   "main": "./out/main/index.js",
   "scripts": {
