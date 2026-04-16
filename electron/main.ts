@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage } from 'electron'
 import { readFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { getPageCount, mergePdfs, savePdfWithImages } from './pdf-service'
@@ -15,6 +15,7 @@ function findPdfInArgs(argv: string[]): string | null {
 
 let initialPendingPath: string | null = findPdfInArgs(process.argv)
 const pendingPaths = new Map<number, string>()
+const viewerPaths = new Map<number, string>()
 
 const iconPath = app.isPackaged
   ? join(process.resourcesPath, 'icon.png')
@@ -56,6 +57,13 @@ function createViewerWindow(): BrowserWindow {
     }
   })
 
+  win.setMenu(buildViewerMenu(win))
+
+  const webContentsId = win.webContents.id
+  win.on('closed', () => {
+    viewerPaths.delete(webContentsId)
+  })
+
   if (process.env.ELECTRON_RENDERER_URL) {
     win.loadURL(`${process.env.ELECTRON_RENDERER_URL}#viewer`)
   } else {
@@ -68,11 +76,66 @@ function createViewerWindow(): BrowserWindow {
 const allowedPdfPaths = new Set<string>()
 const allowedImagePaths = new Set<string>()
 
+function printCurrentPdf(win: BrowserWindow): void {
+  const pdfPath = viewerPaths.get(win.webContents.id)
+  if (!pdfPath) return
+
+  const printWin = new BrowserWindow({
+    show: false,
+    webPreferences: { plugins: true, sandbox: true }
+  })
+
+  const closePrintWin = (): void => {
+    if (!printWin.isDestroyed()) {
+      printWin.close()
+    }
+  }
+
+  printWin.webContents.once('did-finish-load', () => {
+    printWin.webContents.print({ silent: false }, () => {
+      closePrintWin()
+    })
+  })
+
+  printWin.loadFile(pdfPath).catch(() => {
+    closePrintWin()
+  })
+}
+
+function buildViewerMenu(win: BrowserWindow): Menu {
+  return Menu.buildFromTemplate([
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Print',
+          accelerator: 'CmdOrCtrl+P',
+          click: () => printCurrentPdf(win)
+        },
+        { type: 'separator' },
+        { role: 'close' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' }
+      ]
+    }
+  ])
+}
+
 function openPdfInViewer(filePath: string): void {
   allowedPdfPaths.add(filePath)
   const win = createViewerWindow()
   const webContentsId = win.webContents.id
   pendingPaths.set(webContentsId, filePath)
+  viewerPaths.set(webContentsId, filePath)
   win.on('closed', () => {
     pendingPaths.delete(webContentsId)
   })
@@ -122,7 +185,7 @@ function registerIpcHandlers(): void {
     return results
   })
 
-  ipcMain.handle('dialog:open-file', async () => {
+  ipcMain.handle('dialog:open-file', async (event) => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       properties: ['openFile'],
       filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
@@ -136,6 +199,7 @@ function registerIpcHandlers(): void {
     try {
       const pageCount = await getPageCount(filePath)
       allowedPdfPaths.add(filePath)
+      viewerPaths.set(event.sender.id, filePath)
       return { name: basename(filePath), path: filePath, pageCount }
     } catch {
       return null
