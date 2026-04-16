@@ -1,6 +1,7 @@
 node_modules/
 out/
 dist/
+src/public/pdfjs/
 *.dmg
 *.exe
 *.AppImage

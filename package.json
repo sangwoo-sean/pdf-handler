@@ -4,6 +4,11 @@
   "description": "Simple PDF merger desktop application",
   "main": "./out/main/index.js",
   "scripts": {
+    "copy-pdfjs-assets": "node scripts/copy-pdfjs-assets.mjs",
+    "predev": "npm run copy-pdfjs-assets",
+    "prebuild": "npm run copy-pdfjs-assets",
+    "prepreview": "npm run copy-pdfjs-assets",
+    "pretest": "npm run copy-pdfjs-assets",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",

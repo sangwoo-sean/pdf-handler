@@ -9,6 +9,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).href
 
+// CJK(한국어 등) CMap과 표준14 폰트 데이터는 pdfjs-dist에 내장되지 않음.
+// scripts/copy-pdfjs-assets.mjs가 publicDir로 복사한 자산을 document.baseURI 기준으로 해석한다.
+// dev: http://host/pdfjs/...   prod(electron): file:///.../out/renderer/pdfjs/...
+const PDFJS_CMAP_URL = new URL('./pdfjs/cmaps/', document.baseURI).href
+const PDFJS_STANDARD_FONT_URL = new URL('./pdfjs/standard_fonts/', document.baseURI).href
+
 const RENDER_SCALE = 1.5
 
 export interface PdfPageSize {
@@ -121,7 +127,12 @@ export function usePdfViewer(options?: { autoOpen?: boolean }): UsePdfViewerRetu
       }
 
       const bytes = await window.electronAPI.readPdfFile(path)
-      const pdfDoc = await pdfjs.getDocument({ data: bytes }).promise
+      const pdfDoc = await pdfjs.getDocument({
+        data: bytes,
+        cMapUrl: PDFJS_CMAP_URL,
+        cMapPacked: true,
+        standardFontDataUrl: PDFJS_STANDARD_FONT_URL
+      }).promise
 
       pdfDocRef.current = pdfDoc
       setFileName(path.replace(/.*[\\/]/, ''))
